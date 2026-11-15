@@ -1,6 +1,6 @@
 """Finding and reading NISAR GCOV (HHHH, HVHV) from ASF. Search tries several ways and REPORTS what it found."""
-import re, datetime as dt, numpy as np
-from concurrent.futures import ThreadPoolExecutor
+import re, os, time, hashlib, datetime as dt, numpy as np
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from . import config as C
 
 NAME = re.compile(r"NISAR_L2_[A-Z]{2}_GCOV_(\d{3})_(\d{3})_([AD])_(\d{3})_\d{4}_(\w{4})_[AD]_(\d{8})T(\d{6})_\d{8}T\d{6}_(X\d{5}|P\d{5})")
@@ -78,19 +78,22 @@ def to_grid(da, epsg, bbox, nx, ny):
     da = da.rio.clip_box(minx=w - .02, miny=s - .02, maxx=e + .02, maxy=n + .02, crs="EPSG:4326")
     f = max(1, int(round(C.TARGET_M / abs(float(da.x[1] - da.x[0])))))
     da = da.coarsen(y=f, x=f, boundary="trim").mean().compute()
+    da = da.rio.write_crs(epsg).rio.write_nodata(np.nan) # block-averaging drops the CRS tag, so write it again
     return da.rio.reproject("EPSG:4326", transform=from_bounds(w, s, e, n, nx, ny), shape=(ny, nx),
                             resampling=Resampling.average).values.astype("float64")
 
 def read_one(g, bbox, nx, ny, token):
     import fsspec, xarray as xr
-    fs = fsspec.filesystem("http", headers={"Authorization": f"Bearer {token}"}, block_size=16 * 512 * 512)
+    import aiohttp                                   # a stalled connection now fails after 2 minutes instead of hanging forever
+    fs = fsspec.filesystem("http", headers={"Authorization": f"Bearer {token}"}, block_size=16 * 512 * 512,
+                           client_kwargs={"timeout": aiohttp.ClientTimeout(total=None, sock_connect=30, sock_read=120)})
     with fs.open(g["url"], "rb") as fh:
         tree = xr.open_datatree(fh, engine="h5netcdf", decode_timedelta=False, phony_dims="access", chunks="auto")
         ds = tree["/science/LSAR/GCOV/grids/frequencyA"].to_dataset()
         epsg = int(np.asarray(ds["projection"].attrs["epsg_code"]).item())
         return [to_grid(ds[p], epsg, bbox, nx, ny) if p in ds else np.full((ny, nx), np.nan) for p in ("HHHH", "HVHV")]
 
-def read_stack(grans, bbox, nx, ny, token, progress):
+def read_stack_old(grans, bbox, nx, ny, token, progress):
     """Reads files in parallel (3 at a time). Returns dates, HH dB, HV dB, skipped list."""
     def work(g):
         try:
@@ -105,5 +108,38 @@ def read_stack(grans, bbox, nx, ny, token, progress):
             else:
                 ok.append(g); hh.append(r[0].ravel()); hv.append(r[1].ravel())
             progress(i + 1, len(grans))
+    db = lambda L: 10 * np.log10(np.where(np.array(L) > 1e-4, np.array(L), np.nan))
+    return ok, db(hh), db(hv), skipped
+
+def _fpath(g, bbox, nx, ny):
+    key = f"{g['url']}|{bbox}|{nx}|{ny}|{C.TARGET_M}"
+    return os.path.join(C.CACHE_DIR, "granules", hashlib.md5(key.encode()).hexdigest()[:16] + ".npz")
+
+
+def read_stack(grans, bbox, nx, ny, token, progress):
+    """Reads files in parallel. Each finished file is SAVED to cache/granules, so a stopped or failed run never repeats work.
+    Progress counts files as they really finish (not in list order). A failed file is retried once."""
+    def work(g):
+        path, err = _fpath(g, bbox, nx, ny), None
+        if os.path.exists(path):
+            z = np.load(path); return g, [z["hh"], z["hv"]]
+        for attempt in (1, 2):
+            t0 = time.time(); print(f"  start {g['date']:%Y-%m-%d} (try {attempt})", flush=True)
+            try:
+                r = read_one(g, bbox, nx, ny, token)
+                os.makedirs(os.path.dirname(path), exist_ok=True); np.savez(path, hh=r[0], hv=r[1])
+                print(f"  done  {g['date']:%Y-%m-%d} in {time.time() - t0:.0f} s", flush=True); return g, r
+            except Exception as ex:
+                err = ex; print(f"  FAIL  {g['date']:%Y-%m-%d} after {time.time() - t0:.0f} s: {type(ex).__name__}", flush=True)
+        return g, err
+    res = {}
+    with ThreadPoolExecutor(C.READ_WORKERS) as ex:
+        for i, fut in enumerate(as_completed([ex.submit(work, g) for g in grans])):
+            g, r = fut.result(); res[g["url"]] = r; progress(i + 1, len(grans))
+    ok, hh, hv, skipped = [], [], [], []
+    for g in grans:                                       # keep the stack in date order
+        r = res[g["url"]]
+        if isinstance(r, Exception): skipped.append(f"{g['date']:%Y-%m-%d}: {type(r).__name__} {str(r)[:100]}")
+        else: ok.append(g); hh.append(r[0].ravel()); hv.append(r[1].ravel())
     db = lambda L: 10 * np.log10(np.where(np.array(L) > 1e-4, np.array(L), np.nan))
     return ok, db(hh), db(hv), skipped

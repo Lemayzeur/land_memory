@@ -18,16 +18,22 @@ TARGET_M, MAX_PIXELS = 250, 60000
 # Are of interest for the demo
 PRESETS = {                                
     "Artibonite, Haiti": [-72.9, 19.0, -72.3, 19.5],
+     "Artibonite valley, Haiti (small, fast)": [-72.75, 19.10, -72.45, 19.35],
+     # "Dhaka, Bangladesh": [],
     "Afar, Ethiopia (NISAR Cookbook test area)": [40.91, 12.39, 41.89, 13.25],
     "Central Valley, California": [-121.5, 36.5, -120.5, 37.4],
     "Mekong Delta, Vietnam": [105.0, 9.5, 106.2, 10.5],
     "Nile Delta, Egypt": [30.5, 30.5, 31.8, 31.5],
-    "Punjab, India": [74.0, 30.5, 75.2, 31.5]
+    "Punjab, India": [74.0, 30.5, 75.2, 31.5],
 }
 
 DEFAULT_AREA = "Artibonite, Haiti"
+DEFAULT_AREA = "Artibonite valley, Haiti (small, fast)"
+READ_WORKERS = 4  # NISAR files read in parallel
+MAX_DATES = 0  # 0 = use all dates; e.g. 8 = only the latest 8 (faster build, thinner history)
 
 # DJANGO STyle
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 CACHE_DIR = os.path.join(ROOT, "cache")

@@ -3,17 +3,18 @@
 <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css"></head><body>
 <header><b>LAND MEMORY</b><span>Learning landscape behavior from satellite radar and rainfall</span>
- <em id="banner"></em><button id="about">About &amp; limits</button><div id="bar"><i id="prog"></i></div></header>
+ <em id="banner"></em><button id="instant">Instant demo</button><button id="about">About &amp; limits</button><div id="bar"><i id="prog"></i></div></header>
 <div id="app">
 <aside id="left">
  <section><h3>Area of interest</h3>
   <select id="preset"></select><button id="draw">Draw area on map</button><div id="bbox" class="small"></div></section>
  <section><h3>NISAR and rainfall data</h3>
+    <p>Ongoing proect by NASA and ISR</p>
   <label>Data maturity <select id="maturity"><option value="mature">Provisional + validated (recommended)</option>
    <option value="validated">Validated only (from 21 Oct 2026)</option><option value="all">All, including BETA (not calibrated)</option></select></label>
   <label>Orbit track (one track = comparable geometry) <select id="track"><option value="">Auto: track with most dates</option></select></label>
   <label>Rain source <select id="rain"><option value="imerg">NASA GPM IMERG (daily)</option><option value="openmeteo">Open-Meteo / ERA5 (fallback)</option></select></label>
-  <label>Earthdata token (optional; normally set in .env) <input id="token" type="password" placeholder="PASTE_YOUR_EARTHDATA_BEARER_TOKEN_HERE"></label>
+  
   <label class="chk"><input type="checkbox" id="demo"> Use DEMO data (synthetic)</label>
   <div class="row"><button id="find">Find NISAR data</button><button id="build" class="primary">Build analysis</button></div>
   <button id="scan" class="ghost">Scan preset areas for NISAR coverage</button>

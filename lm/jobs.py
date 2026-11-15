@@ -66,6 +66,7 @@ def _run(J, p):
             sel = [g for g in grans if "|".join((g["track"], g["dir"], g["frame"])) == key]
             mode = collections.Counter(g["mode"] for g in sel).most_common(1)[0][0]
             sel = [g for g in sel if g["mode"] == mode]                              # one acquisition configuration only
+            if C.MAX_DATES: sel = sel[-C.MAX_DATES:]
             if len(sel) < 6: raise NoData(f"Only {len(sel)} dates on this track (need at least 6). Try another track, area, or maturity.")
             token = p.get("token") or C.EDL_TOKEN
             if not token: raise NoData("No Earthdata token. Set EDL_TOKEN in .env (see .env.example) or paste one in the Data panel.")

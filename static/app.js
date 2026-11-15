@@ -150,11 +150,10 @@ fetch('/test/config').then(r => r.json()).then(c => {
     style: { version: 8, sources: { osm: { type: 'raster', tileSize: 256, attribution: '© OpenStreetMap contributors', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'] } }, layers: [{ id: 'osm', type: 'raster', source: 'osm' }] } });
   map.on('load', async () => {
     map.addSource('aoi', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }); map.addLayer({ id: 'aoi-line', type: 'line', source: 'aoi', paint: { 'line-color': '#E8A23B', 'line-width': 3 } });
-    setBBox(b); $('preset').value = c.default; await find();
+    setBBox(b); $('preset').value = c.default;                      // no slow web search here: the screen must never wait on NASA
     const pre = await post('/test/jobs', { ...body(), demo: false, cache_only: true });
-    if (pre.id) { jobId = pre.id; poll(); }
-    else if (!c.has_token) { $('demo').checked = true; build(); }
-    else log($('log').textContent + '\nNo precomputed analysis yet. Click "Build analysis" (takes minutes) or run: python precompute.py');
+    if (pre.id) { jobId = pre.id; poll(); }                         // saved real analysis: opens instantly
+    else { $('demo').checked = true; build(); }                     // otherwise show the labelled DEMO, so the map is never empty
   });
   map.on('mousedown', e => { if (drawing) p0 = e.lngLat; });
   map.on('mousemove', e => { if (drawing && p0) setBBox(clampBox(p0, e.lngLat)); });
@@ -172,5 +171,6 @@ const pixSoft = deb(loadPixel, 150);
 for (const el of document.querySelectorAll('#t-twin input')) { el.oninput = () => { twinText(); pixSoft(); }; el.onchange = () => { if ($('layer').value === 'delta') overlay(); }; }
 $('showscn').onclick = () => { $('layer').value = 'delta'; overlay(); };
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => { document.querySelectorAll('nav button,.tab').forEach(x => x.classList.remove('on')); b.classList.add('on'); $('t-' + b.dataset.tab).classList.add('on'); Object.values(charts).forEach(c => c.resize()); });
+$('instant').onclick = () => { $('demo').checked = true; build(); };            // fake data, ready in seconds
 $('about').onclick = () => $('modal').hidden = false; $('mclose').onclick = () => $('modal').hidden = true;
 twinText();

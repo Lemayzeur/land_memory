@@ -11,3 +11,4 @@ h5netcdf
 fsspec
 aiohttp
 h5py
+dask

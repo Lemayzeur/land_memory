@@ -19,6 +19,12 @@ RADAR_NAMES = {
     2: "High HV (dense vegetation)"
 }
 
+def api_series(rain_mm, k):
+    """Antecedent Precipitation Index: API(t) = P(t) + k*API(t-1). A rain-history index, NOT soil moisture."""
+    r = np.nan_to_num(np.asarray(rain_mm, float)); api = np.zeros(len(r))
+    for t in range(len(r)): api[t] = r[t] + (k * api[t - 1] if t else 0.0)
+    return api
+
 def fit_all(x, Y, min_n=6):
     """For EVERY cell fit  
     backscatter(dB) = a + b*API.  

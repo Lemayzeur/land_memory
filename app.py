@@ -16,7 +16,6 @@ def config():
     print("HELLO")
     return jsonify(presets=C.PRESETS, has_token=bool(C.EDL_TOKEN), max_side=C.MAX_SIDE_DEG, default=C.DEFAULT_AREA)
 
-
 @app.post("/test/search")                       # quick: which NISAR files exist here?
 def search():
     p = request.get_json()
@@ -31,6 +30,9 @@ def scan():
 
 @app.post("/test/jobs")
 def new_job(): return jsonify(id=jobs.start(request.get_json()))
+
+@app.get("/test/jobs/<jid>")
+def status(jid): return jsonify(jobs.meta(jobs.JOBS[jid]))
 
 if __name__ == "__main__": 
     app.run(debug=False, threaded=True, port=5000)

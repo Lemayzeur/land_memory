@@ -161,12 +161,17 @@ def pixel_report(J, i, k, peers, di, sc):
     return out
 
 def meta(J):
+    print("getting meta")
     out = dict(id=J["id"], status=J["status"], progress=J["progress"], log=J["log"][-6:], diag=J["diag"], error=J["error"], tracks=J.get("tracks", []))
+    print("J[DATA]", J['data'])
     D = J["data"]
     if D:
         D["cell_m"] = round((D["bbox"][2] - D["bbox"][0]) * 111320 * np.cos(np.radians((D["bbox"][1] + D["bbox"][3]) / 2)) / D["nx"])
         r = D["rain_arr"]; t0 = D["rain_start"]
-        def win(d, n): i = (d.date() - t0).days; v = r[max(i - n, 0):max(i, 0)]; return None if np.isnan(v).any() else round(float(v.sum()), 1)
+        def win(d, n): 
+            i = (d.date() - t0).days
+            v = r[max(i - n, 0): max(i, 0)]
+            return None if np.isnan(v).any() else round(float(v.sum()), 1)
         out.update(bbox=D["bbox"], nx=D["nx"], ny=D["ny"], demo=D["demo"], source=D["source"], rain_label=D["rain_label"], skipped=D["skipped"], cell_m=D["cell_m"],
                    dates=[dict(date=f"{d:%Y-%m-%d %H:%M}Z", maturity=m, crid=c, r1=win(d, 1), r3=win(d, 3), r7=win(d, 7), r30=win(d, 30))
                           for d, m, c in zip(D["dates"], D["maturity"], D["crid"])],

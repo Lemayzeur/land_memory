@@ -29,10 +29,12 @@ def scan():
         return jsonify(list(ex.map(lambda kv: (kv[0], nisar.count_recent(kv[1])), C.PRESETS.items())))
 
 @app.post("/test/jobs")
-def new_job(): return jsonify(id=jobs.start(request.get_json()))
+def new_job():
+    return jsonify(id=jobs.start(request.get_json()))
 
 @app.get("/test/jobs/<jid>")
-def status(jid): return jsonify(jobs.meta(jobs.JOBS[jid]))
+def status(jid):
+    return jsonify(jobs.meta(jobs.JOBS[jid]))
 
 if __name__ == "__main__": 
     app.run(debug=False, threaded=True, port=5000)

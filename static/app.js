@@ -30,11 +30,29 @@ async function find() {
   $('track').innerHTML = '<option value="">Auto: track with most dates</option>' + r.tracks.map(t => `<option value="${t.key}">${t.label}</option>`).join('');
   log(`Found ${r.count} acquisitions.\n` + r.diag.join('\n') + (r.count ? '' : '\nNo granules: try Scan, another maturity or area, or Demo data.'));
 }
-async function build() { resetResult(); log('Starting…'); const r = await post('/test/jobs', body()); jobId = r.id; clearInterval(timer); timer = setInterval(poll, 1200); }
+async function build() {
+  resetResult(); 
+  log('Starting…'); 
+  const r = await post('/test/jobs', body()); 
+  jobId = r.id; 
+  clearInterval(timer); 
+  timer = setInterval(poll, 1200); 
+
+  // cancel the above query after 15 seconds, avoid lagging
+  setTimeout(() => {
+    clearInterval(timer);
+  }, 15000);
+}
+
 async function poll() {
-  const m = await fetch(`/test/jobs/${jobId}`).then(r => r.json()); $('prog').style.width = m.progress + '%'; log(m.log.join('\n') + (m.diag.length ? '\n' + m.diag.join('\n') : ''));
-  if (m.status === 'running') return; clearInterval(timer);
-  if (m.status !== 'done') { log(`${m.error}\n` + m.diag.join('\n')); return; }
+  const m = await fetch(`/test/jobs/${jobId}`).then(r => r.json()); 
+  $('prog').style.width = m.progress + '%'; log(m.log.join('\n') + (m.diag.length ? '\n' + m.diag.join('\n') : ''));
+  if (m.status === 'running') 
+    return; clearInterval(timer);
+  if (m.status !== 'done') { 
+    log(`${m.error}\n` + m.diag.join('\n')); 
+    return;
+  }
   meta = m; showMeta(m); refresh();
 }
 function showMeta(m) {

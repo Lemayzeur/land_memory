@@ -1,48 +1,70 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LAND MEMORY · Dashboard</title>
+<title>LAND MEMORY</title>
 <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css"></head><body>
-<header><b>LAND MEMORY</b><span>same rain, different response</span><em id="banner"></em><div id="bar"><i id="prog"></i></div></header>
-<div id="app"><aside>
- <section><h3>1 · Area of interest</h3>
-  <select id="preset"></select>
-  <button id="draw">Draw area on map</button>
-  <div id="bbox" class="small"></div></section>
- <section><h3>2 · NISAR data</h3>
+<header><b>LAND MEMORY</b><span>Learning landscape behavior from satellite radar and rainfall</span>
+ <em id="banner"></em><button id="about">About &amp; limits</button><div id="bar"><i id="prog"></i></div></header>
+<div id="app">
+<aside id="left">
+ <section><h3>Area of interest</h3>
+  <select id="preset"></select><button id="draw">Draw area on map</button><div id="bbox" class="small"></div></section>
+ <section><h3>NISAR and rainfall data</h3>
   <label>Data maturity <select id="maturity"><option value="mature">Provisional + validated (recommended)</option>
    <option value="validated">Validated only (from 21 Oct 2026)</option><option value="all">All, including BETA (not calibrated)</option></select></label>
-  <label>Orbit track (same track = same geometry) <select id="track"><option value="">Auto: track with most dates</option></select></label>
+  <label>Orbit track (one track = comparable geometry) <select id="track"><option value="">Auto: track with most dates</option></select></label>
   <label>Rain source <select id="rain"><option value="imerg">NASA GPM IMERG (daily)</option><option value="openmeteo">Open-Meteo / ERA5 (fallback)</option></select></label>
-  <label>Earthdata token <input id="token" type="password" placeholder="urs.earthdata.nasa.gov/profile → Generate Token"></label>
+  <label>Earthdata token (optional; normally set in .env) <input id="token" type="password" placeholder="PASTE_YOUR_EARTHDATA_BEARER_TOKEN_HERE"></label>
   <label class="chk"><input type="checkbox" id="demo"> Use DEMO data (synthetic)</label>
   <div class="row"><button id="find">Find NISAR data</button><button id="build" class="primary">Build analysis</button></div>
   <button id="scan" class="ghost">Scan preset areas for NISAR coverage</button>
   <pre id="log"></pre><div id="meta" class="small"></div></section>
- <section><h3>3 · Map and model options</h3>
-  <label>Map layer <select id="layer"><option value="z">Unusual vs peers (z-score)</option><option value="b">Response slope (dB per mm)</option>
-   <option value="mean">Mean backscatter (dB)</option><option value="delta">Scenario: predicted change (dB)</option></select></label>
+ <section><h3>Map and model options</h3>
+  <label>Map layer <select id="layer">
+   <option value="t">Direction A · latest observation vs own history</option><option value="z">Direction B · response vs similar places</option>
+   <option value="b">Rainfall-response slope</option><option value="mean">Mean backscatter</option><option value="n">Valid observations</option>
+   <option value="delta">Digital Twin · simulated change</option></select></label>
+  <label>Observation to test <select id="di"></select></label>
   <div class="row"><label>Polarization <select id="pol"><option value="hh">HH</option><option value="hv">HV</option></select></label>
-  <label>Compare with <select id="peers"><option value="landcover">Same land cover</option><option value="radar">Similar radar (HV terciles)</option><option value="none">All pixels</option></select></label></div>
-  <label>Rain memory (decay) <b id="kv">0.85</b><input id="k" type="range" min="0.5" max="0.95" step="0.01" value="0.85"></label>
-  <label>Flag threshold |z| ≥ <b id="tv">3</b><input id="thr" type="range" min="1" max="4" step="0.5" value="3"></label>
-  <label>Overlay opacity <input id="opa" type="range" min="0.1" max="1" step="0.05" value="0.8"></label></section>
- <section id="twin"><h3>LAND MEMORY · Scenario Explorer</h3>
-  <p class="note">Illustrative controls and values, not a validated prediction.</p>
+   <label>Similar places <select id="peers"><option value="landcover">Same land cover</option><option value="radar">Similar radar (HV terciles)</option><option value="none">All cells</option></select></label></div>
+  <label>API decay k <b id="kv">0.85</b><input id="k" type="range" min="0.5" max="0.95" step="0.01" value="0.85"></label>
+  <label>Flag threshold |score| ≥ <b id="tv">3</b><input id="thr" type="range" min="1" max="4" step="0.5" value="3"></label>
+  <label>Overlay opacity <input id="opa" type="range" min="0.1" max="1" step="0.05" value="0.8"></label>
+  <div id="sum" class="small"></div></section>
+</aside>
+<div id="mapwrap"><div id="map"></div><div id="legend"></div></div>
+<aside id="right">
+ <nav><button data-tab="explore" class="on">1 Explore</button><button data-tab="history">2 History</button><button data-tab="behavior">3 Behavior</button><button data-tab="unusual">4 Unusual</button><button data-tab="twin">5 Twin</button></nav>
+ <div class="tab on" id="t-explore"><p class="note">Click the map inside the outlined area to select an analysis cell.</p></div>
+ <div class="tab" id="t-history"><p class="note">Select a cell to see its rainfall and radar history.</p></div>
+ <div class="tab" id="t-behavior"><p class="note">Select a cell to see its learned rainfall-response relationship.</p></div>
+ <div class="tab" id="t-unusual"><p class="note">Select a cell to compare it with its own history and with similar places.</p></div>
+ <div class="tab" id="t-twin">
+  <h4>LAND MEMORY · Scenario Explorer</h4><p class="note">Illustrative controls and values, not a validated prediction.</p>
   <label>Simulated rainfall <b id="rv">50</b> mm<input id="rain_mm" type="range" min="0" max="150" value="50"></label>
   <div class="scale"><span>0 mm</span><span>150 mm</span></div>
   <div class="grp"><b>Previous landscape conditions</b>
    <label class="chk"><input type="radio" name="prev" value="dry"> Relatively dry</label>
    <label class="chk"><input type="radio" name="prev" value="mod" checked> Moderate wetness</label>
    <label class="chk"><input type="radio" name="prev" value="wet"> Already wet</label></div>
+  <label>Dry days after the rain <b id="dv">0</b><input id="dry" type="range" min="0" max="10" value="0"></label>
   <div class="grp"><b>Scenario</b>
    <label class="chk"><input type="radio" name="scn" value="normal" checked> Normal conditions</label>
    <label class="chk"><input type="radio" name="scn" value="changed"> Changed landscape conditions</label>
    <label id="chgrow" hidden>Response strength change <b id="cv">+30</b>%<input id="chg" type="range" min="-50" max="100" value="30"></label></div>
   <div class="box"><b>Your simulation input</b><div id="yin"></div></div>
-  <button id="showscn" class="ghost">Show scenario on map</button>
-  <p class="note">Inputs go to this area's fitted statistical response model (backscatter vs. recent rain). It estimates a radar-backscatter change, not soil moisture or flood depth, and is not validated.</p></section>
- <section><h3>Selected location</h3><div id="info">Click the map inside the outlined area.</div><canvas id="chart" height="230"></canvas></section>
-</aside><div id="map"></div></div>
+  <button id="showscn" class="ghost">Show simulated change on map</button>
+  <div id="twinout"><p class="note">Select a cell to run the simulation.</p></div>
+  <div class="cv"><canvas id="ch-twin"></canvas></div>
+  <p class="note">Inputs go to this cell's fitted statistical model: API(t) = P(t) + k·API(t−1), then backscatter = a + b·API. It estimates a radar-backscatter response, not soil moisture, flooding, or water storage.</p></div>
+</aside></div>
+<div id="modal" hidden><div><button id="mclose">Close</button><h3>About LAND MEMORY</h3>
+ <p>For each cell LAND MEMORY fits <b>backscatter(dB) = a + b·API</b> for HH and HV, where API(t) = P(t) + k·API(t−1) is a rainfall-history index from IMERG. <b>Direction A</b> compares a new observation with the cell's own history; <b>Direction B</b> compares its slope with similar places.</p>
+ <h4>Limits</h4><ul><li>Radar backscatter is not a direct measure of soil moisture or flooding. An unusual value says "investigate", not "why".</li>
+ <li>NISAR repeats about every 12 days and calibrated data begins in June 2026, so histories are short. Check the confidence label.</li>
+ <li>Rainfall is coarse (about 10 km) compared with a 250 m cell. Missing rain is never treated as zero; affected dates are excluded.</li>
+ <li>API decay k is an assumption; see the sensitivity table. Land cover is a broad grouping.</li>
+ <li>The Digital Twin is a statistical prototype, not a physical water model, and is not validated.</li>
+ <li>Cells are analysis areas, not individual farms. Mixed provisional and validated products can look like change.</li></ul></div></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="/static/app.js"></script></body></html>

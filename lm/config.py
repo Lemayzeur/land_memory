@@ -24,3 +24,10 @@ PRESETS = {
     "Nile Delta, Egypt": [30.5, 30.5, 31.8, 31.5],
     "Punjab, India": [74.0, 30.5, 75.2, 31.5]
 }
+
+DEFAULT_AREA = "Artibonite, Haiti"
+
+# DJANGO STyle
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+CACHE_DIR = os.path.join(ROOT, "cache")

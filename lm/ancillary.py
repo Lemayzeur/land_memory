@@ -25,7 +25,7 @@ def _imerg(bbox, start, end):
     import earthaccess, xarray as xr
     w, s, e, n = bbox
     m = .1
-    if not (os.getenvt("EARTHDATA_USERNAME") and os.getenv("EARTHDATA_PASSWORD")): 
+    if not (os.getenv("EARTHDATA_USERNAME") and os.getenv("EARTHDATA_PASSWORD")): 
         raise RuntimeError("Earthdata username/password not set in .env")
     
     earthaccess.login(strategy="environment")

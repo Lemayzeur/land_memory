@@ -42,7 +42,7 @@ def args():
               change=f("change", 0) / 100 if request.args.get("scn") == "changed" else 0.0)
     return J, f("k", .85), request.args.get("peers", "landcover"), di, sc
 
-@app.get("/api/jobs/<jid>/overlay.png")
+@app.get("/test/jobs/<jid>/overlay.png")
 def overlay(jid):
     J, k, peers, di, sc = args(); D = J["data"]; layer = request.args.get("layer", "z"); pol = request.args.get("pol", "hh")
     A = jobs.analysis(J, pol, k, peers, di)
@@ -52,12 +52,12 @@ def overlay(jid):
     else: v = {"z": A["z"], "t": A["tz"], "b": A["b"], "mean": A["mean"], "n": A["n"].astype(float)}[layer]
     return Response(render.png(np.asarray(v).reshape(D["ny"], D["nx"]), layer, f("thr", 3)), mimetype="image/png")
 
-@app.get("/api/jobs/<jid>/summary")
+@app.get("/test/jobs/<jid>/summary")
 def summary(jid):
     J, k, peers, di, _ = args(); return jsonify(jobs.summary(J, k, peers, di, f("thr", 3)))
 
 
-@app.get("/api/jobs/<jid>/pixel")
+@app.get("/test/jobs/<jid>/pixel")
 def pixel(jid):
     J, k, peers, di, sc = args(); D = J["data"]; w, s, e, n = D["bbox"]
     c = int((f("lon", 0) - w) / (e - w) * D["nx"]); r = int((n - f("lat", 0)) / (n - s) * D["ny"])

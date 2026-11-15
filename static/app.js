@@ -12,7 +12,7 @@ let cfg, map, bbox, jobId = null, meta = null, marker, sel = null, drawing = fal
 // ---------- every control feeds this one request string ----------
 const sc = () => ({ rain_mm: $('rain_mm').value, prev: radio('prev'), scn: radio('scn'), change: $('chg').value, dry: $('dry').value });
 const qs = () => new URLSearchParams({ pol: $('pol').value, k: $('k').value, peers: $('peers').value, layer: $('layer').value, thr: $('thr').value, di: $('di').value || -1, ...sc() }).toString();
-const body = () => ({ bbox, maturity: $('maturity').value, track: $('track').value, rain: $('rain').value, demo: $('demo').checked, token: $('token').value });
+const body = () => ({ bbox, maturity: $('maturity').value, track: $('track').value, rain: $('rain').value, demo: $('demo').checked, token: $('token')?.value });
 const log = t => { $('log').textContent = t; };
 
 // ---------- area of interest ----------
@@ -161,7 +161,11 @@ fetch('/test/config').then(r => r.json()).then(c => {
   map.on('click', e => { if (drawing || !jobId) return; sel = e.lngLat; if (marker) marker.remove(); marker = new maplibregl.Marker({ color: '#b2182b' }).setLngLat(sel).addTo(map); loadPixel(); });
 });
 $('draw').onclick = () => { drawing = true; map.dragPan.disable(); map.getCanvas().style.cursor = 'crosshair'; $('draw').textContent = 'Drag a rectangle…'; };
-$('preset').onchange = () => { const b = cfg.presets[$('preset').value]; if (b) { newArea(b, true); find(); } };
+$('preset').onchange = async () => {              // open a saved analysis for this area if one exists
+  const b = cfg.presets[$('preset').value]; if (!b) return; newArea(b, true); $('track').value = '';
+  const pre = await post('/test/jobs', { ...body(), demo: false, cache_only: true });
+  if (pre.id) { jobId = pre.id; poll(); } else { log('No saved analysis for this area yet.\nPress "Build analysis" (takes a while) or run:\npython precompute.py "' + $('preset').value + '"'); find(); }
+};
 $('find').onclick = find; $('build').onclick = build; $('maturity').onchange = find;
 $('scan').onclick = async () => { log('Scanning presets…'); const r = await fetch('/test/scan').then(x => x.json()); log('NISAR acquisitions found (provisional+validated):\n' + r.map(([n, c]) => `${c < 0 ? 'error' : c}  ${n}`).join('\n')); };
 for (const id of ['pol', 'peers', 'k', 'thr', 'layer', 'di']) $(id).onchange = () => { $('kv').textContent = $('k').value; $('tv').textContent = $('thr').value; refresh(); };

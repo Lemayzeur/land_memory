@@ -1,5 +1,8 @@
 import numpy as np
 
+# rain gaps within this many days before a pass invalidate its API
+MEM_DAYS = 14                                     
+
 # peer group keys
 LC_NAMES = {
     10: "Tree cover", 
@@ -24,6 +27,11 @@ def api_series(rain_mm, k):
     r = np.nan_to_num(np.asarray(rain_mm, float)); api = np.zeros(len(r))
     for t in range(len(r)): api[t] = r[t] + (k * api[t - 1] if t else 0.0)
     return api
+
+def gap_flags(rain_mm, win=MEM_DAYS):
+    """True where ANY rain value is missing in the last `win` days. Missing rain is never treated as zero rain."""
+    bad = np.isnan(np.asarray(rain_mm, float)).astype(int)
+    return np.convolve(bad, np.ones(win, int))[:len(bad)] > 0
 
 def fit_all(x, Y, min_n=6):
     """For EVERY cell fit  
@@ -91,3 +99,10 @@ def peer_z(b, se, groups, min_px=5):
         z[i] = (b[i] - m) / np.maximum(np.maximum(mad, se[i]), 1e-9)
 
     return z, med
+
+def scenario(a, b, sd, se, api_prev, k, rain_mm, change, dry_days=0):
+    """API after the event = k*API_prev + rain, then `dry_days` rain-free days (x k each).
+    ref = estimate before the event; norm = same landscape after; scn = response strength changed by `change` (0.3 = +30%)."""
+    api_after = (k * api_prev + rain_mm) * k ** dry_days
+    return dict(api_after=api_after, ref=a + b * api_prev, norm=a + b * api_after,
+                scn=a + b * (1 + change) * api_after, half=1.96 * np.sqrt(sd ** 2 + (se * api_after) ** 2))

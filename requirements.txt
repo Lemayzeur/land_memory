@@ -12,3 +12,4 @@ fsspec
 aiohttp
 h5py
 dask
+dotenv

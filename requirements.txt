@@ -1,0 +1,12 @@
+flask
+numpy
+pillow
+requests
+asf_search
+earthaccess
+xarray
+rioxarray
+rasterio
+h5netcdf
+fsspec
+aiohttp

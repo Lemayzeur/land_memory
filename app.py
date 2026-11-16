@@ -23,7 +23,7 @@ def search():
     except Exception as ex: return jsonify(count=0, tracks=[], diag=[f"{type(ex).__name__}: {ex}"])
     return jsonify(count=len(grans), tracks=nisar.tracks(grans), diag=diag)
 
-@app.get("/test/scan")                          # which preset areas have NISAR data right now?
+@app.get("/test/scan")                       
 def scan():
     with ThreadPoolExecutor(6) as ex:
         return jsonify(list(ex.map(lambda kv: (kv[0], nisar.count_recent(kv[1])), C.PRESETS.items())))
@@ -65,5 +65,5 @@ def pixel(jid):
     return jsonify(jobs.pixel_report(J, r * D["nx"] + c, k, peers, di, sc))
 
 if __name__ == "__main__": 
-    app.run(debug=False, threaded=True, port=5000)
+    app.run(debug=False, threaded=True, host="0.0.0.0", port=5000)
 

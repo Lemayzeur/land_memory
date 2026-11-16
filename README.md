@@ -7,14 +7,13 @@
 
   
 
-LAND MEMORY is a web dashboard built for the NASA Space Apps Challenge. For every small square of land, it learns how satellite radar changes after rainfall, then flags squares that behave differently from their own past or from similar places. A "Scenario Explorer" lets you ask what-if questions about rainfall.
+LAND MEMORY is a web dashboard built for the NASA Space Apps Challenge. For every small square of land, it learns how satellite radar changes after rainfall, then flags squares that behave differently from their own past or from similar places. A Scenario Explorer lets you ask what-if questions about rainfall.
 
   
+- **Live website:** [https://landmemory.pythonanywhere.com/](https://landmemory.pythonanywhere.com/)
+- **30-second video:** [https://vimeo.com/1247139551](https://vimeo.com/1247139551)
 
->  **Important:** Radar backscatter is not a direct measure of soil moisture or flooding. An unusual result means "look here", not "this is why". The what-if tool is a simple statistical model, not a validated forecast.
-
-App Demo: [https://landmemory.pythonanywhere.com/](https://landmemory.pythonanywhere.com/)
-
+> **Important:** Radar backscatter is not a direct measure of soil moisture or flooding. An unusual result means "look here", not "this is why". The Scenario Explorer is a simple statistical model, not a validated forecast.
   
 
 ## What it does
@@ -29,11 +28,24 @@ App Demo: [https://landmemory.pythonanywhere.com/](https://landmemory.pythonanyw
 
 -  **Unusual:** two checks. (A) this cell vs. its own history, (B) this cell vs. similar places (same land cover).
 
--  **Twin (Scenario Explorer):** choose rainfall (0 to 150 mm), previous conditions, dry days, and normal or changed landscape, and see the estimated HH/HV response.
+-  **Scenario Explorer** (the "Twin" tab): choose rainfall (0 to 150 mm), previous conditions, dry days, and normal or changed landscape, and see the estimated HH/HV response.
 
 -  **Honest labels:** the top banner says whether data is synthetic demo, precomputed, or computed on demand.
 
-  
+
+## Example: Artibonite valley, Haiti
+
+Our precomputed demo uses 11 NISAR passes (June to October 2026) on one track, averaged to 250 m cells, paired with NASA GPM IMERG daily rainfall. We compared each cell's latest pass (30 October 2026) with its own history, and its radar response with other cropland cells.
+
+| Result (HH, flag threshold 3) | Value |
+|---|---|
+| Cells analysed | 13,860 |
+| Typical number of observations per cell | 11 |
+| Cells flagged vs. their own history | 5.3% |
+| Cells flagged vs. similar places | 1.8% |
+
+The flagged cells cluster in a block near the western coast and a patch in the north-east. We treat them as places to inspect, not as confirmed change. Possible explanations include standing water, vegetation change, a large rain just before the pass, or processing differences (the dashboard warns that our passes mix provisional and validated NISAR processing). Field data would be needed to confirm any of these.
+
 
 ## Data sources
 
@@ -41,12 +53,14 @@ App Demo: [https://landmemory.pythonanywhere.com/](https://landmemory.pythonanyw
 
 | Data | Source | Needs |
 |---|---|---|
-| NISAR L-band GCOV (HH, HV) | NASA / ISRO via ASF DAAC | Earthdata token |
-| Daily rainfall | NASA GPM IMERG (fallback: Open-Meteo ERA5) | Earthdata login (IMERG only) |
-| Land cover | ESA WorldCover | none |
-| Base map, libraries | OpenStreetMap, MapLibre, Chart.js (CDN) | internet |
+| NISAR L-band GCOV (HH, HV), Provisional and Validated, Version 1 | NASA / ISRO, via ASF DAAC | Earthdata token |
+| Daily rainfall: GPM IMERG Late Run V07 (GPM_3IMERGDL) | NASA GES DISC | Earthdata login |
+| Rainfall fallback (optional, not used for the Haiti results): Open-Meteo ERA5 | Open-Meteo | none |
+| Land cover: ESA WorldCover 10 m 2021 | ESA | none |
+| Base map and libraries | OpenStreetMap, MapLibre GL JS, Chart.js (CDN) | internet |
 
-  
+NISAR BETA products are excluded by default because they are not fully calibrated.
+
 
 ## Requirements
 
@@ -299,9 +313,9 @@ University of Missouri-Columbia (Institute of Data Science and Informatics, Coll
 
 Parts of this project's code, structure, and documentation were written and improved with **Claude**, an AI assistant made by Anthropic, including code improvement, debugging, and drafting this README. AI-generated code can contain mistakes. The team is responsible for the final content and results.
 
-**References:**
+## References
 
-[1] NASA/JPL/NISAR. (2026). NISAR Beta Geocoded Polarimetric Covariance Product (Version 1) [Data set]. NASA Alaska Satellite Facility Distributed Active Archive Center. https://doi.org/10.5067/NIL2GCOV-B1 Date Accessed: 2026-11-15
-<video src="https://user-images.githubusercontent.com/your-video-url.mp4" width="600" controls>
-</video>
-<div style="padding:56.25% 0 0 0;position:relative;"><iframe src="https://player.vimeo.com/video/1247139551?autopause=0&amp;player_id=0&amp;app_id=58479&amp;autoplay=1&amp;muted=1" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;top:0;left:0;width:100%;height:100%;" title="LAND MEMORY: Learning How Landscapes Respond to Rainfall"></iframe></div><script src="https://player.vimeo.com/api/player.js"></script>
+[1] NASA/JPL/NISAR. (2026). *NISAR Provisional Geocoded Polarimetric Covariance Product (Version 1)* [Data set]. NASA Alaska Satellite Facility Distributed Active Archive Center. https://doi.org/10.5067/NIL2GCOV-P1. Date accessed: 2026-11-15.
+[2] NASA/JPL/NISAR. (2026). *NISAR Geocoded Polarimetric Covariance Product (Version 1, validated)* [Data set]. NASA Alaska Satellite Facility Distributed Active Archive Center. https://www.earthdata.nasa.gov/data/catalog/asf-nisar-l2-gcov-v1-1. Date accessed: 2026-11-15.
+[3] Huffman, G.J., et al. *GPM IMERG Late Precipitation L3 1 day 0.1 degree x 0.1 degree V07 (GPM_3IMERGDL)* [Data set]. NASA GES DISC. https://doi.org/10.5067/GPM/IMERGDL/DAY/07. Date accessed: 2026-11-15.
+[4] Zanaga, D., et al. (2022). *ESA WorldCover 10 m 2021 v200* [Data set]. European Space Agency. https://esa-worldcover.org/en/data-access.
